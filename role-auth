@@ -7,6 +7,7 @@ CREATE TABLE `roles` (
   `id`         BIGINT       NOT NULL AUTO_INCREMENT COMMENT '自增主键',
   `name`       VARCHAR(32)  NOT NULL COMMENT '角色名称',
   `desc`  VARCHAR(1024)     NULL COMMENT '描述',
+  `status`     SMALLINT     NOT NULL COMMENT '状态 1（正常）-1（删除）',
   `created_at` DATETIME     NULL     COMMENT '创建时间',
   `updated_at` DATETIME     NULL     COMMENT '修改时间',
   PRIMARY KEY (`id`));
