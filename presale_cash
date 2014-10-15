@@ -21,7 +21,7 @@ def get_presale_cash():
         print "query rrs_order_alipay_cash for presale"
         # 查出预售提现单 排除退款提现
         cashs = db.query("select * from rrs_order_alipay_cash where type=2 and refund_fee !=0")
-        print 'cashs length: ' + len(cashs)
+        print 'cashs length: ' + str(len(cashs))
         #long running
         endtime = dd.now()
         print "done, cast: ", (endtime - starttime).seconds
@@ -38,7 +38,7 @@ def get_cancel_overtime_order_item():
         starttime = dd.now()
         print "query order_items for cancel or overtime"
         orderItems = db.query("select * from order_items where type=2 and status in(-6,-7)")
-        print 'orderItems length: ' + len(orderItems)
+        print 'orderItems length: ' + str(len(orderItems))
         #long running
         endtime = dd.now()
         print "done, cast: ", (endtime - starttime).seconds
@@ -55,7 +55,7 @@ def get_over_refund_refundgoods_order_item():
         starttime = dd.now()
         print "query order_items for over or refund or refund_goods"
         orderItems = db.query("select * from order_items where type=2 and status in(-3,-4,3)")
-        print 'orderItems length: ' + len(orderItems)
+        print 'orderItems length: ' + str(len(orderItems))
         #long running
         endtime = dd.now()
         print "done, cast: ", (endtime - starttime).seconds
