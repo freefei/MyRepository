@@ -13,42 +13,99 @@ mysql_host = "127.0.0.1"
 db_name = "test"
 dd = datetime.datetime
 
-
-def delete_useless_data():
+#查找预售提现
+def get_presale_cash():
     try:
 
         starttime = dd.now()
-        print "clean rrs_seller_settlements"
-        # 清理订单结算汇总表
-        result = db.execute("delete from rrs_seller_settlements where total_earning = 0 and total_expenditure = 0" + 
-            " and rrs_commission = 0 and score_earning = 0 and presell_deposit = 0")
-        print 'affacted: ' + str(result)
+        print "query rrs_order_alipay_cash for presale"
+        # 查出预售提现单 排除退款提现
+        cashs = db.query("select * from rrs_order_alipay_cash where type=2 and refund_fee !=0")
+        print 'cashs length: ' + len(cashs)
         #long running
         endtime = dd.now()
         print "done, cast: ", (endtime - starttime).seconds
-
-
-        print "clean rrs_seller_alipay_cash"   
-        starttime = dd.now()     
-        # 清理订单提现表
-        db.execute("delete from rrs_seller_alipay_cash where total_fee = 0 and alipay_fee = 0" + 
-            " and cash_fee = 0 and refund_fee = 0")
-
-        print 'affacted: ' + str(result)
-        endtime = dd.now()
-        print "done, cast: ", (endtime - starttime).seconds
-
+        return cashs
 
     except Exception as e:
-        print "clean useless data failed ", e
+        print "query presale cash data failed ", e
         pass
 
+#查找已付定金取消或付尾款超时type为预售定金的子订单
+def get_cancel_overtime_order_item():
+    try:
 
-def get_settlement_paging(db, offset, limit):
-    cashes = db.query("SELECT *  FROM rrs_settlements limit %s, %s", offset, limit)
-    return cashes
+        starttime = dd.now()
+        print "query order_items for cancel or overtime"
+        orderItems = db.query("select * from order_items where type=2 and status in(-6,-7)")
+        print 'orderItems length: ' + len(orderItems)
+        #long running
+        endtime = dd.now()
+        print "done, cast: ", (endtime - starttime).seconds
+        return orderItems
 
+    except Exception as e:
+        print "query order_items orderItems data failed ", e
+        pass
 
+#查找已完成或退款或退货的类型为预售定金的子订单
+def get_over_refund_refundgoods_order_item():
+    try:
+
+        starttime = dd.now()
+        print "query order_items for over or refund or refund_goods"
+        orderItems = db.query("select * from order_items where type=2 and status in(-3,-4,3)")
+        print 'orderItems length: ' + len(orderItems)
+        #long running
+        endtime = dd.now()
+        print "done, cast: ", (endtime - starttime).seconds
+        return orderItems
+
+    except Exception as e:
+        print "query order_items orderItems data failed ", e
+        pass
+
+#处理只有需生成一条提现记录的预售提现（当为预售已付定金取消和付尾款超时时）只需更新子结算中的paymentcode paid_at 手续费
+def handle_one_cash():
+    orderItems = get_cancel_overtime_order_item()
+    for orderItem in orderItems:
+        #更新子结算
+        update_item_settlement(orderItem)
+
+#处理要拆分的提现
+def handle_split_cash():
+    orderItems = get_cancel_overtime_order_item()
+    for orderItem in orderItems:
+        chash = db.get("select * from rrs_order_alipay_cash where order_id = %s",orderItem.order_id)
+        #更新子结算
+        update_item_settlement(orderItem)
+        #更新总提现 
+        db.execute("update rrs_order_alipay_cash set alipay_fee = %s set total_fee =%s set cash_fee =%s",service_fee,orderItem.fee,orderItem.fee-service_fee)
+        #更新尾款子结算
+        orderItemRest = db.get("SELECT * FROM order_items where order_id = %s" and type =3, orderItem.order_id)
+        #更新子结算
+        update_item_settlement(orderItemRest)
+        #生成尾款提现
+        generate_order_cash（orderItemRest）
+        
+#更新子结算单
+def update_item_settlement(orderItem):
+    transes = db.query("select * from rrs_alipay_trans where trade_no = %s", orderItem.payment_code)
+            if (len(transes) == 0):
+                print "can not found alipay transes, skipped"
+                return
+            else:
+                print "got trans from alipay!!"
+                service_fee = 0
+                trans_date =''
+                for trans in transes:
+                    if trans.trans_code_msg == '收费':
+                        print "get fee of order(id:{0}) is {1}".format(settlement.order_id, trans.outcome)
+                        service_fee = trans.outcome
+                        trans_date = trans.trans_date
+                #更新定金子结算单
+                db.execute("update rrs_item_settlements set third_party_commission = %s paid_at= %s payment_code = %s where order_id = %s", service_fee,trans_date,orderItem.payment_code, orderItem.id)
+                
 def generate_order_cash(settlement):
     order = db.get("SELECT * FROM orders where id = %s", settlement.order_id)
     # order_items = db.query("SELECT * FROM order_items where order_id = %s", order_id)
@@ -58,58 +115,8 @@ def generate_order_cash(settlement):
         # print "plain cod order(id:{0}) ,skipped".format(settlement.order_id)
         return
 
-    if (settlement.third_party_commission == None):
-        print "3rd commission is None, try to get it"
-        
-        if (settlement.type == 1):
-            # 普通订单
-            print "order (id:{0}) is plain order, payment_code:{1}".format(settlement.order_id, settlement.payment_code)
-           
-
-            if (settlement.payment_code == None):
-                print "order (id:{0}) payment_code none, skipped".format(settlement.order_id)
-                return
-
-            if (len(settlement.payment_code) != 16):
-                print "order (id:{0}) payment_code incorrect, skipped".format(settlement.order_id)
-                return
-
-            transes = db.query("select * from rrs_alipay_trans where trade_no = %s", settlement.payment_code)
-            if (len(transes) == 0):
-                print "can not found alipay transes, skipped"
-                return
-            else:
-                print "got trans from alipay!!"
-                service_fee = 0
-                for trans in transes:
-                    if trans.trans_code_msg == '收费':
-                        print "get fee of order(id:{0}) is {1}".format(settlement.order_id, trans.outcome)
-                        service_fee = trans.outcome
-
-                db.execute("update rrs_settlements set third_party_commission = %s where id = %s", service_fee, settlement.id)
-                settlement = db.get("select * from rrs_settlements where id = %s", settlement.id)
-        else:
-             # 预售订单, 暂时不处理
-            print "order (id:{0}) is presale order".format(settlement.order_id)
-            return
-
-
-    
-
     # 计算总金额
     total_fee = settlement.fee
-
-    if (settlement.order_id == 15013437):
-        print "**********************"
-        print "settlement ->  id:{0}, type:{1}, pay_type:{2}, status:{3}".format(settlement.id, settlement.type, settlement.pay_type, settlement.trade_status)
-        print "**********************"
-
-    if ((settlement.type == 2 and settlement.pay_type == 2) or (settlement.type == 2 and settlement.pay_type == 1 and buyer_not_pay_rest(settlement))):
-        # 以定金作为总金额
-        deposit = db.get("select * from order_items where order_id = %s and type = 2", settlement.order_id)
-        total_fee = deposit.fee
-
-
 
     # print settlement.third_party_commission
     cash_fee = long(total_fee) - long(settlement.third_party_commission)
@@ -127,7 +134,7 @@ def generate_order_cash(settlement):
         cashed_at = settlement.paid_at
 
 
-    ## 创建结算单
+    ## 创建提现
     db.execute("INSERT INTO rrs_order_alipay_cash " + 
         "(" + 
             "order_id, type, buyer_id, buyer_name, seller_id, seller_name, shop_id, shop_name, " + 
@@ -147,59 +154,6 @@ def generate_order_cash(settlement):
     )
 
 
-def buyer_not_pay_rest(settlement):
-    return settlement.trade_status == -6 or settlement.trade_status == -7
-
-
-def generate_refund_cash(order_item):
-
-    try:
-        settlement = db.get("select * from rrs_settlements where order_id = %s", order_item.order_id)
-        shop = db.get("select * from shops where user_id = %s", settlement.seller_id)
-
-        refund_at = order_item.refund_at
-        start_at = start_of_day(refund_at)
-        end_at = end_of_day(refund_at)
-
-        seller_daily = db.get("select * from rrs_seller_alipay_cash where seller_id = %s and summed_at >= %s and summed_at <=%s"
-            , order_item.seller_id, start_at, end_at)
-
-        cashed_at = None
-        cashed = 0
-
-        if (seller_daily != None and seller_daily.status == 1):
-            cashed = 1
-            cashed_at = order_item.refund_at
-
-
-        ## 创建退款单
-        db.execute("INSERT INTO rrs_order_alipay_cash " + 
-            "(" + 
-                "order_id, order_item_id, type, buyer_id, buyer_name, seller_id, seller_name, shop_id, shop_name, " + 
-                "total_fee, alipay_fee, cash_fee, refund_fee, status, " + 
-                "traded_at, cashed_at, created_at, updated_at " 
-            ")" + 
-            "VALUES " + 
-            "(" + 
-                "%s, %s, %s, %s, %s, %s, %s, %s, %s, " + 
-                "%s, %s, %s, %s, %s, " + 
-                "%s, %s, now(), now()"
-            ")", 
-
-                order_item.order_id, order_item.id, settlement.type, settlement.buyer_id, settlement.buyer_name, settlement.seller_id, settlement.seller_name, shop.id, shop.name,
-                0, 0, str(0 - order_item.refund_amount), str(order_item.refund_amount), cashed, 
-                order_item.refund_at, cashed_at       
-        )
-
-        # print "handle refund cash (order_id:{0}, order_item_id:{1})".format(order_item.order_id, order_item.id)
-        
-
-    except Exception as e:
-        print "create refund order cashes failed ", e
-        pass
-
-
-
 
 def start_of_day(date):
     # t = dd.strptime(date_str, '%Y-%m-%d %H:%M:%S')
@@ -211,205 +165,13 @@ def end_of_day(date):
     end = date.strftime('%Y-%m-%d') + ' 23:59:59'
     return end
 
-
-
-def build_order_cash3():
-
-    try:
-
-        print "create order_alipay_cash data"
-        # query all alipay cash 
-        dailies = db.query("SELECT * FROM rrs_alipay_cash")
-        for daily in dailies:
-
-            # if daily.total_fee == 0 and daily.alipay_fee == 0 and daily.cash_fee == 0 and daily.refund_fee == 0:
-            #     continue
-
-            start_at = start_of_day(daily.summed_at)
-            end_at = end_of_day(daily.summed_at)
-
-            print "handle cashes from start: {0} to end: {1}".format(start_at, end_at)
-            settlements = db.query("SELECT * FROM rrs_settlements WHERE paid_at >= %s AND paid_at <= %s", start_at, end_at)
-            print "handle cashes from start: {0} to end: {1} catch {2}".format(start_at, end_at, len(settlements))
-
-            for settlement in settlements:
-                generate_order_cash(settlement)   
-
-
-            order_items = db.query("SELECT * FROM order_items WHERE refund_at >= %s AND refund_at <= %s", start_at, end_at)
-            if (len(order_items) == 0):
-                print "not cath refund order from {0} to {1}".format(start_at, end_at)
-
-            else:
-                for order_item in order_items:
-                    generate_refund_cash(order_item)
-
-    except Exception as e:
-        print "create order settlement data failed ", e
-        pass
-
-
-
-# 改进版本， 以商户每日汇总
-def build_order_cash2():
-
-    try:
-        print "create order_alipay_cash data"
-
-        # query all alipay cash 
-        dailies = db.query("SELECT * FROM rrs_alipay_cash")
-        for daily in dailies:
-
-            if daily.total_fee == 0 and daily.alipay_fee == 0 and daily.cash_fee == 0 and daily.refund_fee == 0:
-                continue
-
-            start_at = start_of_day(daily.summed_at)
-            end_at = end_of_day(daily.summed_at)
-
-            seller_dailies = db.query("SELECT * FROM rrs_seller_alipay_cash WHERE summed_at >= %s AND summed_at <= %s", start_at, end_at)
-            print "summed_at {0} catch {1}".format(daily.summed_at, len(seller_dailies))
-            for seller_daily in seller_dailies:
-                print "handle seller(id:{0}, name:{1})".format(seller_daily.seller_id, str.decode(str(seller_daily.seller_name), "utf-8"))
-
-                settlements = db.query("SELECT * FROM rrs_settlements WHERE seller_id = %s AND paid_at >= %s AND paid_at <= %s", 
-                    seller_daily.seller_id, start_at, end_at)
-
-                for settlement in settlements:
-                    generate_order_cash(settlement)    
-
-
-            print "handle cashes from start: {0} to end: {1}".format(start_at, end_at)
-
-
-    except Exception as e:
-        print "create order settlement data failed ", e
-        pass
-
-
-def build_order_cash():
-
-    try:
-        print "create order_alipay_cash data"
-
-        offset = 0
-        limit = 500
-        current = 500
-        index = 0
-        
-        starttime = dd.now()
-
-        while current == limit: 
-
-            settlements = get_settlement_paging(db, offset, limit)             
-            current = len(settlements)
-
-            for settlement in settlements:
-                # print "handle {0} , order_id:{1}, index {2}".format(settlement.id, settlement.order_id, index)
-                generate_order_cash(settlement, settlement.order_id)
-                print "persist: {0}, index {1} ".format(settlement.order_id, index)
-
-                index = index + 1
-
-            offset = offset + 500            
-
-        endtime = dd.now()
-        print "done, cast: ", (endtime - starttime).seconds
-
-    except Exception as e:
-        print "create order settlement data failed ", e
-        pass
-                    
-
-# def update_voucher():
-#     try:
-#         seller_dailies = db.query("SELECT * FROM rrs_seller_alipay_cash ")  
-
-#         for seller_daily in seller_dailies:
-#               print "handle seller(id:{0}, name:{1})".format(seller_daily.seller_id, str.decode(str(seller_daily.seller_name), "utf-8"))
-
-
-#     except Exception as e:
-#         print "create order settlement data failed ", e
-#         pass
-
-def summary_seller_daily():
-    try:   
-
-        print "create seller alipay daliy cash data"
-
-        # query all alipay cash 
-        dailies = db.query("SELECT * FROM rrs_alipay_cash where summed_at >= %s", '2014-06-20')
-        for daily in dailies:
-            shops = db.query("SELECT * FROM shops")
-            start_at = start_of_day(daily.summed_at)
-            end_at = end_of_day(daily.summed_at)
-            for shop in shops:
-                seller_daily = db.get("SELECT count(1) AS cash_total_count, sum(alipay_fee) AS alipay_fee, " + 
-                    "sum(total_fee) as total_fee, sum(cash_fee) as cash_fee, sum(refund_fee) as refund_fee  FROM  "
-                    + " rrs_order_alipay_cash WHERE  seller_id = %s  AND cashed_at >= %s AND cashed_at <= %s AND status = 1",
-                    shop.user_id,  start_at, end_at)
-
-
-                if (seller_daily.cash_total_count == 0):
-                    continue;
-
-                else:
-                    shop_extra = db.get("SELECT * FROM shop_extras WHERE shop_id = %s", shop.id)
-                    old_seller_daily = db.get("SELECT * FROM rrs_seller_alipay_cash WHERE seller_id = %s AND summed_at >= %s AND summed_at <= %s",
-                        shop.user_id, start_at, end_at)
-
-
-                    synced = None
-                    synced_at = None
-
-                    if (old_seller_daily != None):
-                        synced = old_seller_daily.synced
-                        synced_at = old_seller_daily.synced_at
-                    else:
-                        synced = 0
-
-
-                    db.execute("INSERT INTO rrs_seller_alipay_cash_copy " + 
-                        "(" +
-                            "seller_id, seller_name, outer_code, business, cash_total_count," +
-                            "total_fee, alipay_fee, cash_fee, refund_fee, voucher," +
-                            "status, synced, vouched, synced_at, vouched_at, summed_at, created_at, updated_at" +
-                        ")" +
-                        "VALUES " + 
-                        "(" +
-                            "%s, %s, %s, %s, %s," + 
-                            "%s, %s, %s, %s, %s," +
-                            "%s, %s, %s, %s, %s, %s, now(), now()" +
-                        ")",
-                            shop.user_id, shop.user_name, shop_extra.outer_code, shop.business_id, seller_daily.cash_total_count,
-                            seller_daily.total_fee, seller_daily.alipay_fee, seller_daily.cash_fee, seller_daily.refund_fee, None,
-                            1,  synced, 0, synced_at, None, start_at
-                    )
-
-            print "handle from {0} to {1}".format(start_at, end_at)
-
-    except Exception as e:
-        print "summary seller daily failed", e
-        pass
-
-
-
-
-
 if __name__ == "__main__":
 
     db = Connection(mysql_host, db_name, user='root', password='anywhere')
-    # truncate order_alipay_cash
-    db.execute("truncate table rrs_order_alipay_cash")
 
-    # clean data
-    delete_useless_data()
+    # 处理只有需生成一条提现记录的预售提现
+    def handle_one_cash()
+    # 处理要拆分的提现
+    def handle_split_cash()
 
-    # generate order cash
-    build_order_cash3()
-
-    # clean seller alipay cash
-    db.execute("truncate table rrs_seller_alipay_cash_copy")
-
-    # summary seller daily
-    summary_seller_daily()
+   
