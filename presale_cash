@@ -152,8 +152,51 @@ def generate_order_cash(settlement):
             total_fee, settlement.third_party_commission, str(cash_fee), 0, settlement.cashed, 
             order.paid_at, cashed_at
     )
+    
+#
+def get_item_settlement_paging(db, offset, limit):
+    itemSettlements = db.query("SELECT *  FROM rrs_item_settlements limit %s, %s", offset, limit)
+    return itemSettlements
+
+#修复子结算中seller_name
+der fix_item_setllement_seller_name():
+
+    try:
+        print "update rrs_item_settlements data"
+
+        offset = 0
+        limit = 500
+        current = 500
+        index = 0
+        
+        starttime = dd.now()
+
+        while current == limit: 
+
+            settlements = get_item_settlement_paging(db, offset, limit)             
+            current = len(settlements)
+
+            for settlement in settlements:
+                # print "handle {0} , seller_id:{1}, index {2}".format(settlement.id, settlement.seller_id, index)
+                user = db.get("select * from users where id = %s",settlement.seller_id)
+                db.execute("update rrs_item_settlements set seller_name = %s where id = %s",user.name,settlement.id)
+                print "update: {0}, index {1} ".format(settlement.id, index)
+
+                index = index + 1
+
+            offset = offset + 500            
+
+        endtime = dd.now()
+        print "done, cast: ", (endtime - starttime).seconds
+
+    except Exception as e:
+        print "update item settlement data failed ", e
+        pass
+                    
 
 
+
+    
 
 def start_of_day(date):
     # t = dd.strptime(date_str, '%Y-%m-%d %H:%M:%S')
