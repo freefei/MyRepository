@@ -159,7 +159,7 @@ def get_item_settlement_paging(db, offset, limit):
     return itemSettlements
 
 #修复子结算中seller_name
-der fix_item_setllement_seller_name():
+def fix_item_settlement_seller_name():
 
     try:
         print "update rrs_item_settlements data"
@@ -212,9 +212,11 @@ if __name__ == "__main__":
 
     db = Connection(mysql_host, db_name, user='root', password='anywhere')
 
+    #修复子结算中seller_name
+    fix_item_settlement_seller_name()
     # 处理只有需生成一条提现记录的预售提现
-    def handle_one_cash()
+    handle_one_cash()
     # 处理要拆分的提现
-    def handle_split_cash()
+    handle_split_cash()
 
    
