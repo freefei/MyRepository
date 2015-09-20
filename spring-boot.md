@@ -3,22 +3,35 @@
 ####Spring Boot 是什么?
 
 &nbsp;&nbsp;&nbsp;&nbsp;Spring Boot是由Pivotal团队提供的全新框架，其设计目的是用来简化新Spring应用的初始搭建以及开发过程。该框架使用了特定的方式来进行配置，即Spring Boot充分利用了JavaConfig的配置模式以及“约定优于配置”的理念，能够极大的简化基于Spring MVC的Web应用和REST服务开发。从而使开发人员不再需要定义样板化的配置。
-之前我们创建基于Spring的项目需要考虑添加哪些Spring依赖和第三方的依赖。使用Spring Boot后，我们可以以最小化的依赖开始spring应用。大多数Spring Boot应用需要很少的配置即可运行，比如我们可以创建独立独立大Java应用，然后通过java -jar运行启动或者传统的WAR部署。其也提供了命令行工具来直接运行Spring脚本（如groovy脚本），Boot致力于在蓬勃发展的快速应用开发领域（rapid application development）成为领导者。
+之前我们创建基于Spring的项目需要考虑添加哪些Spring依赖和第三方的依赖。使用Spring Boot后，我们可以以最小化的依赖开始spring应用。大多数Spring Boot应用需要很少的配置即可运行，比如我们可以创建独立大的ava应用，然后通过java -jar运行启动或者传统的WAR部署。其也提供了命令行工具来直接运行Spring脚本（如groovy脚本），Boot致力于在蓬勃发展的快速应用开发领域（rapid application development）成为领导者。
 
 &nbsp;&nbsp;&nbsp;&nbsp;在追求开发体验的提升方面，Spring Boot，甚至可以说整个Spring生态系统都使用到了**Groovy编程语言**。Boot所提供的众多便捷功能，都是借助于Groovy强大的MetaObject协议、可插拔的AST转换过程以及内置的依赖解决方案引擎所实现的。在其核心的编译模型之中，Boot使用Groovy来构建工程文件，所以它可以使用通用的导入和样板方法（如类的main方法）对类所生成的字节码进行装饰（decorate）。这样使用Boot编写的应用就能保持非常简洁，却依然可以提供众多的功能。
 
 ####环境准备
 * 一个称手的文本编辑器（例如Vim、Emacs、Sublime Text）或者IDE（Eclipse、Idea Intellij）
 * Java环境（JDK 1.7或以上版本）
-* Maven 3.0+（Eclipse和Idea IntelliJ内置，如果使用IDE并且不使用命令行工具可以不安装）
+* Maven 3.0+（Eclipse和Idea IntelliJ内置，如果使用IDE并且不使用命令行工具可以不安装）/ Gradle (1.12+)
+
+####Servlet containers
+
+The following embedded servlet containers are supported out of the box:
+
+|  Name |Servlet Version | Java Version |
+|---------| ------|-----------|
+| Tomcat 8  | 3.1 |    Java 7+   |
+| Tomcat 7  | 3.0 |    Java 6+  |
+| Jetty 9  | 3.1  |    Java 7+ |
+| Jetty 8 | 3.0   |    Java 6+ |
+| Undertow 1.1 | 3.1 | Java 7+   |
 
 ####命令行环境
 &nbsp;&nbsp;&nbsp;&nbsp;从最根本上来讲，Spring Boot就是一些库的集合，它能够被任意项目的构建系统所使用。简便起见，该框架也提供了命令行界面，它可以用来运行和测试Boot应用。
-框架的发布版本，包括集成的CLI（命令行界面），可以在Spring仓库中手动下载和安装。一种更为简便的方式是使用Groovy环境管理器（Groovy enVironment Manager，GVM），它会处理Boot版本的安装和管理。Boot及其CLI可以通过GVM的命令行gvm install springboot进行安装。在OS X上安装Boot可以使用Homebrew包管理器。为了完成安装，首先要使用brew tap pivotal/tap切换到Pivotal仓库中，然后执行brew install springboot命令。
+框架的发布版本，包括集成的CLI（命令行界面），可以在Spring仓库中手动下载和安装。一种更为简便的方式是使用Groovy环境管理器（Groovy enVironment Manager，GVM），它会处理Boot版本的安装和管理。Boot及其CLI可以通过GVM的命令行gvm install springboot进行安装。在OS X上安装Boot可以使用Homebrew包管理器。为了完成安装，首先要使用brew tap pivotal/tap切换到Pivotal仓库中，然后执行brew install springboot命令，
+Homebrew will install spring to /usr/local/bin。
 
 ####Example
 
-&nbsp;&nbsp;&nbsp;&nbsp;Spring Boot在刚刚公开宣布之后就将一个样例发布到了**Twitter**上，它目前成为了最流行的一个应用样例。它的全部描述如程序清单1.2所示，一个非常简单的Groovy文件可以生成功能强大的以Spring为后端的web应用。
+&nbsp;&nbsp;&nbsp;&nbsp;Spring Boot在刚刚公开宣布之后就将一个样例发布到了**Twitter**上，它目前成为了最流行的一个应用样例。它的全部描述如程序清单1.2所示，一个非常简单的Groovy文件可以生成功能强大的以Spring为后端的web应用，该文件名字可以不与类名相同要以.groovy结尾。
 
 ```java
 @RestController
@@ -30,7 +43,7 @@ class App {
 }
 ```
 
-&nbsp;&nbsp;&nbsp;&nbsp;这个应用可以通过spring run App.groovy命令在Spring Boot CLI中运行。Boot会分析文件并根据各种“编译器自动配置（compiler auto-configuration）”标示符来确定其意图是生成Web应用。然后，它会在一个嵌入式的Tomcat中启动Spring应用上下文，并且使用默认的**8080**端口。打开浏览器并导航到给定的URL，随后将会加载一个页面并展现简单的文本响应：“hello”。提供默认应用上下文以及嵌入式容器的这些过程，能够让开发人员更加关注于开发应用以及业务逻辑，从而不用再关心繁琐的样板式配置
+&nbsp;&nbsp;&nbsp;&nbsp;这个应用可以通过spring run App.groovy命令在Spring Boot CLI中运行，也可加上 --watch参数可以实现热部署。Boot会分析文件并根据各种“编译器自动配置（compiler auto-configuration）”标示符来确定其意图是生成Web应用。然后，它会在一个嵌入式的Tomcat中启动Spring应用上下文，并且使用默认的**8080**端口。打开浏览器并导航到给定的URL，随后将会加载一个页面并展现简单的文本响应：“hello”。提供默认应用上下文以及嵌入式容器的这些过程，能够让开发人员更加关注于开发应用以及业务逻辑，从而不用再关心繁琐的样板式配置
 
 ####IDEA环境
 &nbsp;&nbsp;&nbsp;&nbsp;要进行打包和分发的工程会依赖于像Maven或Gradle这样的构建系统。为了简化依赖图，Boot的功能是模块化的，通过导入Boot所谓的“starter”模块，可以将许多的依赖添加到工程之中。为了更容易地管理依赖版本和使用默认配置，框架提供了一个parent POM，工程可以继承它。Spring Boot工程的样例POM文件定义如程序清单1所示。
@@ -129,6 +142,11 @@ SpringApplication是Spring Boot框架中描述Spring应用的类，它的run()�
 
 @ResponseBody 表示将结果直接返回给调用者（from spring mvc）.
 
+容器的默认端口是8080，如果要更改端口好
+
+只需添加src/main/resources/application.properties 文件 在文件中加入server.port:9000 即可。
+
+
 ####运行多个控制器
 
 上边通过加上@EnableAutoConfiguration开启自动配置，然后通过SpringApplication.run(UserController.class);运行这个控制器；这种方式只运行一个控制器比较方便，
@@ -206,7 +224,7 @@ java代码
 
 ####访问数据库
 
-* Using MySQL in Spring Boot via Spring Data JPA and Hibernate
+* Using MySQL in Spring Boot via Spring Data JPA
 
 **Dependencies** in pom.xml
 
@@ -227,7 +245,7 @@ java代码
 </dependencies>
 ```
 
-**Properties file **in src/main/resources/application.properties
+**Properties file** in src/main/resources/application.properties
 
 ```properties
 # DataSource settings: set here your own configurations for the database 
@@ -243,18 +261,6 @@ spring.datasource.validationQuery = SELECT 1
 
 # Show or not log for each sql query
 spring.jpa.show-sql = true
-
-# Hibernate ddl auto (create, create-drop, update)
-spring.jpa.hibernate.ddl-auto = update
-
-# Naming strategy
-spring.jpa.hibernate.naming-strategy = org.hibernate.cfg.ImprovedNamingStrategy
-
-# Use spring.jpa.properties.* for Hibernate native properties (the prefix is
-# stripped before adding them to the entity manager)
-
-# The SQL dialect makes Hibernate generate better SQL for the chosen database
-spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.MySQL5Dialect
 ```
 **Create an entity**
 
@@ -303,15 +309,21 @@ public class User {
 **The Data Access Object**
 
 ```java
-@Transactional
-public interface UserDao extends CrudRepository<User, Long> {
+package com.renfei.repository;
 
-  /**
-   * This method will find an User instance in the database by its email.
-   * Note that this method is not implemented and its working code will be
-   * automagically generated from its signature by Spring Data JPA.
-   */
-  public User findByEmail(String email);
+import com.renfei.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+
+/**
+ * User的JPA Repository
+ *
+ * @author songrenfei
+ * @version 1.0.0
+ */
+public interface UserRepository extends JpaRepository<User,String>{
+  
+}
 
 }
 ```
@@ -319,86 +331,59 @@ public interface UserDao extends CrudRepository<User, Long> {
 **A controller for testing**
 
 ```java
-@Controller
+package com.renfei.controller;
+
+import com.renfei.model.User;
+import com.renfei.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+/**
+ * Created with IntelliJ IDEA
+ * Author: songrenfei
+ * Date: 15/9/7
+ * Time: 下午11:52
+ */
+
+@EnableAutoConfiguration
+@RestController
+@RequestMapping("/user")
 public class UserController {
 
-  // Private fields
+    @Autowired
+    UserRepository userRepository;
 
-  @Autowired
-  private UserDao userDao;
+    @RequestMapping("/all")
+    @ResponseBody
+    public List<User> findAll() {
+        List<User> list = new ArrayList<User>();
+        try {
+            Iterable<User> users = userRepository.findAll();
+            for (Iterator<User> iter =users.iterator();iter.hasNext();){
+                list.add(iter.next());
 
-  /**
-   * GET /create  --> Create a new user and save it in the database.
-   */
-  @RequestMapping("/create")
-  @ResponseBody
-  public String create(String email, String name) {
-    User user = null;
-    try {
-      user = new User(email, name);
-      userDao.save(user);
+            }
+            return list;
+        }
+        catch (Exception ex) {
+            System.out.print("查询失败");
+        }
+        return list;
     }
-    catch (Exception ex) {
-      return "Error creating the user: " + ex.toString();
-    }
-    return "User succesfully created! (id = " + user.getId() + ")";
-  }
-  
-  /**
-   * GET /delete  --> Delete the user having the passed id.
-   */
-  @RequestMapping("/delete")
-  @ResponseBody
-  public String delete(long id) {
-    try {
-      User user = new User(id);
-      userDao.delete(user);
-    }
-    catch (Exception ex) {
-      return "Error deleting the user:" + ex.toString();
-    }
-    return "User succesfully deleted!";
-  }
-  
-  /**
-   * GET /get-by-email  --> Return the id for the user having the passed
-   * email.
-   */
-  @RequestMapping("/get-by-email")
-  @ResponseBody
-  public String getByEmail(String email) {
-    String userId;
-    try {
-      User user = userDao.findByEmail(email);
-      userId = String.valueOf(user.getId());
-    }
-    catch (Exception ex) {
-      return "User not found";
-    }
-    return "The user id is: " + userId;
-  }
-  
-  /**
-   * GET /update  --> Update the email and the name for the user in the 
-   * database having the passed id.
-   */
-  @RequestMapping("/update")
-  @ResponseBody
-  public String updateUser(long id, String email, String name) {
-    try {
-      User user = userDao.findOne(id);
-      user.setEmail(email);
-      user.setName(name);
-      userDao.save(user);
-    }
-    catch (Exception ex) {
-      return "Error updating the user: " + ex.toString();
-    }
-    return "User succesfully updated!";
-  }
-  
 }
+
 ```
+
+* Using MySQL in Spring Boot via Spring Data JPA and Mybaties
+
+
 
 
 
