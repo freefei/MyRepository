@@ -5,7 +5,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;Spring Boot是由Pivotal团队提供的全新框架，其设计目的是用来简化新Spring应用的初始搭建以及开发过程。该框架使用了特定的方式来进行配置，即Spring Boot充分利用了JavaConfig的配置模式以及“约定优于配置”的理念，能够极大的简化基于Spring MVC的Web应用和REST服务开发。从而使开发人员不再需要定义样板化的配置。
 之前我们创建基于Spring的项目需要考虑添加哪些Spring依赖和第三方的依赖。使用Spring Boot后，我们可以以最小化的依赖开始spring应用。大多数Spring Boot应用需要很少的配置即可运行，比如我们可以创建独立大的ava应用，然后通过java -jar运行启动或者传统的WAR部署。其也提供了命令行工具来直接运行Spring脚本（如groovy脚本），Boot致力于在蓬勃发展的快速应用开发领域（rapid application development）成为领导者。
 
-&nbsp;&nbsp;&nbsp;&nbsp;在追求开发体验的提升方面，Spring Boot，甚至可以说整个Spring生态系统都使用到了**Groovy编程语言**。Boot所提供的众多便捷功能，都是借助于Groovy强大的MetaObject协议、可插拔的AST转换过程以及内置的依赖解决方案引擎所实现的。在其核心的编译模型之中，Boot使用Groovy来构建工程文件，所以它可以使用通用的导入和样板方法（如类的main方法）对类所生成的字节码进行装饰（decorate）。这样使用Boot编写的应用就能保持非常简洁，却依然可以提供众多的功能。
+&nbsp;&nbsp;&nbsp;&nbsp;在追求开发体验的提升方面，Spring Boot，甚至可以说整个Spring生态系统都使用到了**Groovy编程语言**。Boot所提供的众多便捷功能，都是借助于Groovy强大的MetaObject协议、可插拔的AST转换过程以及内置的依赖解决方案引擎所实现的。在其核心的编译模型之中，Boot使用Groovy来构建工程文件，所以它可以使用通用的导入和样板方法（如类的main方法）对类所生成的字节码进行装饰（decorate）。这样使用Boot编写的应用就能保持非常简洁，却依然可以提供众多的功能,最新版本为1.2.6。
 
 ####环境准备
 * 一个称手的文本编辑器（例如Vim、Emacs、Sublime Text）或者IDE（Eclipse、Idea Intellij）
@@ -23,6 +23,15 @@ The following embedded servlet containers are supported out of the box:
 | Jetty 9  | 3.1  |    Java 7+ |
 | Jetty 8 | 3.0   |    Java 6+ |
 | Undertow 1.1 | 3.1 | Java 7+   |
+
+默认使用的是Tomcat如果换Jetty在pom.xml添加如下依赖：
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-jetty</artifactId>
+</dependency>
+```
 
 ####命令行环境
 &nbsp;&nbsp;&nbsp;&nbsp;从最根本上来讲，Spring Boot就是一些库的集合，它能够被任意项目的构建系统所使用。简便起见，该框架也提供了命令行界面，它可以用来运行和测试Boot应用。
@@ -222,6 +231,29 @@ java代码
 
 ![jar](http://7u2myi.com1.z0.glb.clouddn.com/spring-boot-jar.png)
 
+
+####热部署
+
+* 方法一 利用spring-boot-devtools模块 可以参考[例子](http://blog.csdn.net/zhoujinyu0713/article/details/46843115)
+
+```xml
+ <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-devtools</artifactId>
+  </dependency>
+```
+
+* 方法二 结合spring-loaded来实现热部署
+
+下载[spring-loaded](http://repo.spring.io/release/org/springframework/springloaded/1.2.4.RELEASE/springloaded-1.2.4.RELEASE.jar)
+
+配置如图：-javaagent:/Users/songrenfei/Downloads/springloaded-1.2.4.RELEASE.jar -noverify
+
+![说明](http://7u2myi.com1.z0.glb.clouddn.com/auto-load.png)
+
+
+**修改完代码只需编译下就可以了**
+
 ####访问数据库
 
 * Using MySQL in Spring Boot via Spring Data JPA
@@ -384,7 +416,63 @@ public class UserController {
 * Using MySQL in Spring Boot via Spring Data JPA and Mybaties
 
 
+####生产环境运维支持
 
+与开发和测试环境不同的是，当应用部署到生产环境时，需要各种运维相关的功能的支持，包括性能指标、运行信息和应用管理等。所有这些功能都有很多技术和开源库可以实现。Spring Boot 对这些运维相关的功能进行了整合，形成了一个功能完备和可定制的功能集，称之为 Actuator。只需要在 POM 文件中增加对 “org.springframe.boot:spring-boot-starter-actuator” 的依赖就可以添加 Actuator。Actuator 在添加之后，会自动暴露一些 HTTP 服务来提供这些信息。
+
+
+```xml
+<!-- Production ready features to help you monitor and manage your application. -->
+  <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+  </dependency>
+```
+
+
+|  名称 |说明 | 是否包含敏感信息 |
+|---------| ------|-----------|
+| autoconfig  | 显示 Spring Boot 自动配置的信息。 |    是   |
+| beans  | 显示应用中包含的 Spring bean 的信息。 |    是 |
+| configprops  | 显示应用中的配置参数的实际值。  |    是 |
+| dump | 生成一个 thread dump。  |    是 |
+| env | 显示从 ConfigurableEnvironment 得到的环境配置信息。 | 是  
+| health | 显示应用的健康状态信息。| 否 |
+| info | 显示应用的基本信息。| 否 |
+| metrics | 显示应用的性能指标。 | 是 |
+| mappings | 显示 Spring MVC 应用中通过“
+@RequestMapping”添加的路径映射。| 是|
+| shutdown | 关闭应用。 | 是 |
+| trace | 显示应用相关的跟踪（trace）信息。 | 是 |
+
+
+* http://localhost:8080/beans
+* http://localhost:8080/dump
+* http://localhost:8080/health
+* http://localhost:8080/trace
+* http://localhost:8080/metrics
+
+**添加权限**
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-security</artifactId>
+</dependency>
+```
+
+默认用户user，密码输出在控制台。也可以在配置文件中设置security.user.name=admin
+security.user.password=123456
+
+####使用jetty容器
+spring-boot-starter-jetty
+
+
+
+
+####总结
+
+Spring Boot是新一代Spring应用的开发框架，它能够快速的进行应用开发，让人忘记传统的繁琐配置，更加专注于业务逻辑。
 
 
 
