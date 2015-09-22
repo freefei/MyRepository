@@ -156,6 +156,30 @@ SpringApplication是Spring Boot框架中描述Spring应用的类，它的run()�
 只需添加src/main/resources/application.properties 文件 在文件中加入server.port:9000 即可。
 
 
+####定制启动Banner
+ adding a banner.txt file to your classpath
+
+ 以下变量可以在banner.txt中获取
+
+ |  Variable |说明 | 
+|---------| ------|-----------|
+| ${application.version}  |The version number of your application as declared in MANIFEST.MF. For example Implementation-Version: 1.0 is printed as 1.0 | 
+| ${application.formatted-version}  | The version number of your application as declared in MANIFEST.MF formatted for display (surrounded with brackets and prefixed with v). For example (v1.0). |
+| ${spring-boot.version}  | The Spring Boot version that you are using. For example 1.3.0.BUILD-SNAPSHOT. |
+| ${spring-boot.formatted-version} | The Spring Boot version that you are using formatted for display (surrounded with brackets and prefixed with v). For example (v1.3.0.BUILD-SNAPSHOT).|
+
+如果不想显示启动Banner
+
+```java
+public static void main(String[] args) {
+    SpringApplication app = new SpringApplication(MySpringConfiguration.class);
+    app.setShowBanner(false);
+    app.run(args);
+}
+```
+
+
+
 ####运行多个控制器
 
 上边通过加上@EnableAutoConfiguration开启自动配置，然后通过SpringApplication.run(UserController.class);运行这个控制器；这种方式只运行一个控制器比较方便，
@@ -440,8 +464,7 @@ public class UserController {
 | health | 显示应用的健康状态信息。| 否 |
 | info | 显示应用的基本信息。| 否 |
 | metrics | 显示应用的性能指标。 | 是 |
-| mappings | 显示 Spring MVC 应用中通过“
-@RequestMapping”添加的路径映射。| 是|
+| mappings | 显示 Spring MVC 应用中通过“@RequestMapping”添加的路径映射。| 是|
 | shutdown | 关闭应用。 | 是 |
 | trace | 显示应用相关的跟踪（trace）信息。 | 是 |
 
