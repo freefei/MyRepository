@@ -280,6 +280,25 @@ java代码
 
 ####访问数据库
 
+**Embedded Database Support**
+
+Spring Boot can auto-configure embedded H2, HSQL and Derby databases. You don’t need to provide any connection URLs, simply include a build dependency to the embedded database that you want to use.
+
+For example, typical POM dependencies would be:
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jpa</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.hsqldb</groupId>
+    <artifactId>hsqldb</artifactId>
+    <scope>runtime</scope>
+</dependency>
+```
+
+
 * Using MySQL in Spring Boot via Spring Data JPA
 
 **Dependencies** in pom.xml
@@ -305,11 +324,11 @@ java代码
 
 ```properties
 # DataSource settings: set here your own configurations for the database 
-# connection. In this example we have "netgloo_blog" as database name and 
-# "root" as username and password.
-spring.datasource.url = jdbc:mysql://localhost:8889/netgloo_blog
+spring.datasource.url = jdbc:mysql://localhost:3306/spring_boot
 spring.datasource.username = root
-spring.datasource.password = root
+spring.datasource.password = anywhere
+# 可以去掉，spring-boot可以根据上边的url自动推导出来
+spring.datasource.driver-class-name=com.mysql.jdbc.Driver
 
 # Keep the connection alive if idle for a long time (needed in production)
 spring.datasource.testWhileIdle = true
@@ -438,6 +457,70 @@ public class UserController {
 ```
 
 * Using MySQL in Spring Boot via Spring Data JPA and Mybaties
+
+####使用Redis
+
+```xml
+ <!-- redis -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-redis</artifactId>
+</dependency>
+```
+默认连的是localhost:6379
+
+可以在properties文件中自定义
+
+```text
+# REDIS (RedisProperties)
+spring.redis.database= # database name
+spring.redis.host=localhost # server host
+spring.redis.password= # server password
+spring.redis.port=6379 # connection port
+spring.redis.pool.max-idle=8 # pool settings ...
+spring.redis.pool.min-idle=0
+spring.redis.pool.max-active=8
+spring.redis.pool.max-wait=-1
+spring.redis.sentinel.master= # name of Redis server
+spring.redis.sentinel.nodes= # comma-separated list of host:port pairs
+
+```
+
+简单例子
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private StringRedisTemplate template;
+
+    public void setUserName(Long id){
+
+        User u = userRepository.findById(id);
+
+        template.opsForValue().set(userNameKey(id),u.getName());
+    }
+
+    public String getUserName(Long id){
+
+        return template.opsForValue().get(userNameKey(id));
+
+    }
+
+    public void deleteUserName(Long id){
+        template.opsForValue().getOperations().delete(userNameKey(id));
+    }
+
+
+    private String userNameKey(Long id){
+        return "user-name-"+String.valueOf(id);
+    }
+}
+
+```
+
+
 
 
 ####生产环境运维支持
