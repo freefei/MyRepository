@@ -29,8 +29,39 @@ The following embedded servlet containers are supported out of the box:
 ```xml
 <dependency>
     <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-jetty</artifactId>
 </dependency>
+```
+
+Spring Boot 默认使用的是Tomcat 8、Jetty 9 如果要使用其他版本可以设置如下
+
+```xml
+<properties>
+    <tomcat.version>7.0.59</tomcat.version>
+</properties>
+
+<properties>
+    <jetty.version>8.1.15.v20140411</jetty.version>
+    <jetty-jsp.version>2.2.0.v201112011158</jetty-jsp.version>
+</properties>
+```
+
+Changing the Java version
+
+```xml
+<properties>
+    <java.version>1.8</java.version>
+</properties>
 ```
 
 ####命令行环境
@@ -214,7 +245,15 @@ public class Application {
 
 ```
 
-####模板渲染
+####Template engines
+
+Spring Boot includes auto-configuration support for the following templating engines:
+
+* FreeMarker
+* Groovy
+* Thymeleaf
+* Velocity
+* Mustache
 
 java代码
 
@@ -270,6 +309,8 @@ java代码
 * 方法二 结合spring-loaded来实现热部署
 
 下载[spring-loaded](http://repo.spring.io/release/org/springframework/springloaded/1.2.4.RELEASE/springloaded-1.2.4.RELEASE.jar)
+
+Git[spring-loaded](https://github.com/spring-projects/spring-loaded)
 
 配置如图：-javaagent:/Users/songrenfei/Downloads/springloaded-1.2.4.RELEASE.jar -noverify
 
@@ -458,7 +499,11 @@ public class UserController {
 
 * Using MySQL in Spring Boot via Spring Data JPA and Mybaties
 
-####使用Redis
+####Working with NoSQL technologies
+ including MongoDB, Neo4J, Elasticsearch, Solr, Redis, Gemfire, Couchbase and Cassandra. 
+
+
+* Redis
 
 ```xml
  <!-- redis -->
@@ -520,6 +565,13 @@ public class UserService {
 
 ```
 
+####缓存
+
+
+####消息服务
+
+####测试
+
 
 
 
@@ -572,6 +624,131 @@ security.user.password=123456
 
 ####使用jetty容器
 spring-boot-starter-jetty
+
+####20.5. Remote applications
+
+####Logging
+Spring Boot uses Commons Logging for all internal logging, but leaves the underlying log implementation open.
+Default configurations are provided for Java Util Logging, Log4J, Log4J2 and Logback. 
+
+Log format
+
+```text
+2014-03-05 10:57:51.112  INFO 45469 --- [           main] org.apache.catalina.core.StandardEngine  : Starting Servlet Engine: Apache Tomcat/7.0.52
+2014-03-05 10:57:51.253  INFO 45469 --- [ost-startStop-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2014-03-05 10:57:51.253  INFO 45469 --- [ost-startStop-1] o.s.web.context.ContextLoader            : Root WebApplicationContext: initialization completed in 1358 ms
+2014-03-05 10:57:51.698  INFO 45469 --- [ost-startStop-1] o.s.b.c.e.ServletRegistrationBean        : Mapping servlet: 'dispatcherServlet' to [/]
+2014-03-05 10:57:51.702  INFO 45469 --- [ost-startStop-1] o.s.b.c.embedded.FilterRegistrationBean  : Mapping filter: 'hiddenHttpMethodFilter' to: [/*]
+```
+
+The following items are output:
+
+```text
+
+Date and Time — Millisecond precision and easily sortable.
+Log Level — ERROR, WARN, INFO, DEBUG or TRACE.
+Process ID.
+A --- separator to distinguish the start of actual log messages.
+Thread name — Enclosed in square brackets (may be truncated for console output).
+Logger name — This is usually the source class name (often abbreviated).
+The log message.
+
+```
+*Logback does not have a FATAL level (it is mapped to ERROR)*
+
+* Console output
+
+By default ERROR, WARN and INFO level messages are logged. To also log DEBUG level messages to the console you can start your application with a --debug flag.
+
+$ java -jar myapp.jar --debug
+
+*you can also specify debug=true in your application.properties.*
+
+* File output
+
+set logging.file or logging.path property in your application.properties.
+
+
+|  名称 |说明 | 
+|---------| ------|
+| logging.file  | Writes to the specified log file. Names can be an exact location or relative to the current directory. | 
+| logging.path  | Writes spring.log to the specified directory. Names can be an exact location or relative to the current directory. |
+
+* Log Levels
+
+Example application.properties
+```text
+logging.level.org.springframework.web=DEBUG
+logging.level.org.hibernate=ERROR
+```
+* Configure Logback for logging
+
+When possible we recommend that you use the -spring variants for your logging configuration (for example logback-spring.xml rather than logback.xml). If you use standard configuration locations, Spring cannot completely control log initialization.
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<configuration>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>/Users/songrenfei/logs/settlement.log</file>
+        <encoder>
+            <pattern>%date %level [%thread] %logger{10} [%file:%line] %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>/Users/songrenfei/logs/settlement-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- encoder defaults to ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
+        <encoder>
+            <pattern>%date %level [%thread] %logger{10} [%file:%line] %msg%n</pattern>
+        </encoder>
+        <!-- Only log level INFO and above -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+    </appender>
+
+    <!-- Strictly speaking, the level attribute is not necessary since -->
+    <!-- the level of the root level is set to DEBUG by default.       -->
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+</configuration>
+```
+
+* Configure Log4j for logging
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-log4j</artifactId>
+</dependency>
+```
+
+
+
+
 
 
 
