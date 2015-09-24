@@ -175,15 +175,15 @@ public class HelloWorld {
 
 SpringApplication是Spring Boot框架中描述Spring应用的类，它的run()方法会创建一个Spring应用上下文（Application Context）。另一方面它会扫描当前应用类路径上的依赖，例如本例中发现spring-webmvc（由 spring-boot-starter-web传递引入）在类路径中，那么Spring Boot会判断这是一个Web应用，并启动一个内嵌的Servlet容器（默认是Tomcat）用于处理HTTP请求。
 
-@Controller表示这个一个controller类（from spring mvc）；（from spring mvc）；
+@Controller表示这个一个controller类（from spring mvc）；
 
-@EnableAutoConfiguration声明让spring boot自动给程序进行必要的配置添加的jar依赖（from spring boot）；
+@EnableAutoConfiguration声明让spring boot自动给程序进行必要的配置根据添加的jar依赖（from spring boot）；
 
 @RequestMapping("/sayHello")表示通过/sayHello可以访问的方法（from spring mvc）；
 
 @ResponseBody 表示将结果直接返回给调用者（from spring mvc）.
 
-容器的默认端口是**8080**，如果要更改端口好
+容器的默认端口是**8080**，如果要更改端口号
 
 只需添加src/main/resources/application.properties 文件 在文件中加入server.port:9000 即可。
 
@@ -193,12 +193,12 @@ SpringApplication是Spring Boot框架中描述Spring应用的类，它的run()�
 
  以下变量可以在banner.txt中获取
 
- |  Variable |说明 | 
-|---------| ------|-----------|
-| ${application.version}  |MANIFEST.MF中声明的应用版本号，例如1.0| 
-| ${application.formatted-version}  | MANIFEST.MF中声明的被格式化后的应用版本号（被括号包裹且以v作为前缀），用于显示，例如(v1.0)|
-| ${spring-boot.version}  | 正在使用的Spring Boot版本号，例如1.2.2.BUILD-SNAPSHOT |
-| ${spring-boot.formatted-version} | 正在使用的Spring Boot被格式化后的版本号（被括号包裹且以v作为前缀）, 用于显示，例如(v1.2.2.BUILD-SNAPSHOT)|
+|  Variable |   说明 |
+|---------| ------|
+| ${application.version}  |MANIFEST.MF中声明的应用版本号，例如1.0
+| ${application.formatted-version}  | MANIFEST.MF中声明的被格式化后的应用版本号（被括号包裹且以v作为前缀），用于显示，例如(v1.0)
+| ${spring-boot.version}  | 正在使用的Spring Boot版本号，例如1.2.2.BUILD-SNAPSHOT 
+| ${spring-boot.formatted-version} | 正在使用的Spring Boot被格式化后的版本号（被括号包裹且以v作为前缀）, 用于显示，例如(v1.2.2.BUILD-SNAPSHOT)
 
 如果不想显示启动Banner
 
@@ -214,7 +214,7 @@ public static void main(String[] args) {
 
 ####组织代码
 
-定义main应用类，通常建议你将main应用类放在位于其他类上面的根包（root package）中。通常使用@EnableAutoConfiguration、@Configuration、@ComponentScan开启注解扫描并自动注册相应的注解Bean，也可只加@SpringBootApplication一个注解，整个项目只需一个启动main函数。
+定义main应用类，通常建议将main应用类放在位于其他类上面的根包（root package）中。通常使用@EnableAutoConfiguration、@Configuration、@ComponentScan开启注解扫描并自动注册相应的注解Bean，也可只加@SpringBootApplication一个注解，整个项目只需一个启动main函数。
 
 代码如下：
 ```java
@@ -291,9 +291,9 @@ java代码
   <artifactId>spring-boot-starter-thymeleaf</artifactId>
 </dependency>
 ```
-当你使用这些引擎的任何一种，并采用默认的配置，你的模板将会从src/main/resources/templates目录下自动加载。
+当你使用这些引擎的任何一种，并采用默认的配置，模板将会从src/main/resources/templates目录下自动加载。
 
-接下来需要在默认的模板文件夹src/main/resources/templates/目录下添加一个模板文件hello.html：
+在默认的模板文件夹src/main/resources/templates/目录下添加一个模板文件hello.html：
 
 ```html
 <!DOCTYPE HTML>
@@ -310,7 +310,7 @@ java代码
 
 ####自定义错误页面
 
-Spring Boot安装了一个'whitelabel'错误页面，如果你遇到一个服务器错误那就能在客户端浏览器中看到该页面，可以设置error.whitelabel.enabled=false来关闭该功能。
+Spring Boot安装了一个'whitelabel'错误页面，当遇到一个服务器错误那就会在客户端浏览器中看到该页面，可以设置error.whitelabel.enabled=false来关闭该功能。
 也可以通过一个名称为error的View来替换该页面。
 
 ####创建可执行jar
@@ -344,6 +344,20 @@ public class Application extends SpringBootServletInitializer {
 
 ```xml
 <packaging>war</packaging>
+```
+
+该过程最后的一步是确保内嵌的servlet容器不能干扰war包将部署的servlet容器。为了达到这个目的，你需要将内嵌容器的依赖标记为provided。
+
+```xml
+<dependencies>
+    <!-- … -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-tomcat</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    <!-- … -->
+</dependencies>
 ```
 
 
@@ -510,6 +524,26 @@ public class User {
 
 }
 ```
+为了启用代表User对象的通用数据，我们只需创建一个名为schema.sql或data.sql的文件，并将其包含在classpath之中。这个文件会在模式创建完成之后执行.
+```sql
+schema.sql
+
+DROP TABLE IF EXISTS `users`;
+CREATE TABLE `users` (
+  `id` varchar(50) NOT NULL COMMENT 'id',
+  `name` varchar(50) DEFAULT NULL COMMENT '用户名',
+  `email` varchar(50) DEFAULT NULL COMMENT '邮箱',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+data.sql
+
+INSERT INTO `users` (`id`, `name`, `email`)
+VALUES
+  ('1', 'songrenfei', 'songrenfei@163.com'),
+  ('2', 'lxy', 'songrenfei@163.com');
+
+```
 
 **The Data Access Object**
 
@@ -532,6 +566,7 @@ public interface UserRepository extends JpaRepository<User,String>{
 
 }
 ```
+CrudRepository提供了一些通用的接口方法来创建、查询、更新以及删除对象和对象集合。应用所需的其他特定功能可以按照Spring Data的Repository[开发约定](http://docs.spring.io/spring-data/jpa/docs/1.5.0.RC1/reference/html/jpa.repositories.html#jpa.query-methods)进行定义。一旦UserRepository接口创建成功，Boot的spring-data-jpa层会在工程中探测到它，并将其添加到Spring应用上下文之中，这样对于controller和sevice对象来说，它就成为可以进行自动注入的可选对象。
 
 **A controller for testing**
 
@@ -586,7 +621,16 @@ public class UserController {
 
 ```
 
-* Using MySQL in Spring Boot via Spring Data JPA and Mybaties
+####输出xml格式
+
+```xml
+ <!-- out for xml-->
+  <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-xml</artifactId>
+  </dependency> 
+```
+
 
 ####Working with NoSQL technologies
  including MongoDB, Neo4J, Elasticsearch, Solr, Redis, Gemfire, Couchbase and Cassandra. 
@@ -601,7 +645,7 @@ public class UserController {
     <artifactId>spring-boot-starter-redis</artifactId>
 </dependency>
 ```
-默认连的是localhost:6379
+默认连接的是localhost:6379
 
 可以在properties文件中自定义
 
@@ -654,14 +698,51 @@ public class UserService {
 
 ```
 
-####缓存
+####外部化配置
 
+在application.properties中添加自己的配置
 
-####消息服务
+```text
+my.name=songrenfei
+my.age=18
+```
 
-####测试
+定义配置类
 
+```java
+package com.renfei.configuration;
 
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+/**
+ * 使用自定义的properties
+ * 最后注意在spring Boot入口类加上@EnableConfigurationProperties
+ * Created with IntelliJ IDEA
+ * Author: songrenfei
+ * Date: 15/9/20
+ * Time: 下午9:16
+ */
+@Data
+@ConfigurationProperties(prefix = "my") //若新建了properties文件则通过locations指定位置
+public class MyConfig {
+    private String name;
+    private Integer age;
+}
+
+```
+最后注意在spring Boot入口类加上@EnableConfigurationProperties
+
+```java
+@EnableConfigurationProperties(MyConfig.class)
+@SpringBootApplication
+public class Application extends SpringBootServletInitializer {
+    public static void main(String[] args) throws Exception {
+        SpringApplication.run(Application.class, args);
+    }
+
+}
+```
 
 
 ####生产环境运维支持
@@ -693,11 +774,23 @@ public class UserService {
 | trace | 显示应用相关的跟踪（trace）信息。 | 是 |
 
 
-* http://localhost:8080/beans
-* http://localhost:8080/dump
-* http://localhost:8080/health
-* http://localhost:8080/trace
-* http://localhost:8080/metrics
+
+在一个单独的应用中，执行器的HTTP端口默认和主HTTP端口相同。想要让应用监听不同的端口，你可以设置外部属性management.port。为了监听一个完全不同的网络地址（比如，你有一个用于管理的内部网络和一个用于用户应用程序的外部网络），你可以将management.address设置为一个可用的IP地址，然后将服务器绑定到该地址。
+
+```text
+# ----------------------------------------
+# ACTUATOR PROPERTIES
+# ----------------------------------------
+
+# MANAGEMENT HTTP SERVER (ManagementServerProperties)
+management.port= # defaults to 'server.port'
+management.address= # bind to a specific NIC
+management.context-path= # default to '/'
+management.add-application-context-header= # default to true
+management.security.enabled=true # enable security
+management.security.role=ADMIN # role required to access the management endpoint
+management.security.sessions=stateless # session creating policy to use (always, never, if_required, stateless)
+```
 
 **添加权限**
 
@@ -708,24 +801,36 @@ public class UserService {
 </dependency>
 ```
 
-默认用户user，密码输出在控制台。也可以在配置文件中设置security.user.name=admin
-security.user.password=123456
+Boot会为你提供一个默认的用户账号user和默认角色USER，并且会在应用启动的时候在控制台上输出随机生成的密码。就像Boot的其他功能那样，对于内置的user账号，我们可以很容易地指定不同的用户名和密码
 
-####使用jetty容器
-spring-boot-starter-jetty
+```text
+# SECURITY (SecurityProperties)
+security.user.name=user # login username
+security.user.password= # login password
+security.user.role=USER # role assigned to the user
+security.require-ssl=false # advanced settings ...
+security.enable-csrf=false
+security.basic.enabled=true
+security.basic.realm=Spring
+security.basic.path= # /**
+security.basic.authorize-mode= # ROLE, AUTHENTICATED, NONE
+security.filter-order=0
+security.headers.xss=false
+security.headers.cache=false
+security.headers.frame=false
+security.headers.content-type=false
+security.headers.hsts=all # none / domain / all
+security.sessions=stateless # always / never / if_required / stateless
+security.ignored= # Comma-separated list of paths to exclude from the default secured paths
+```
 
-####20.5. Remote applications
+####日志
+Spring Boot内部日志系统使用的是Commons Logging，但开放底层的日志实现。默认为会Java Util Logging, Log4J, Log4J2和Logback提供配置。每种情况下都会预先配置使用控制台输出，也可以使用可选的文件输出。
+默认情况下，如果你使用'Starter POMs'，那么就会使用Logback记录日志。
 
-####27.1 The ‘Spring Web MVC framework’
+**日志格式**
 
-####Test
-####job
-
-####Logging
-Spring Boot uses Commons Logging for all internal logging, but leaves the underlying log implementation open.
-Default configurations are provided for Java Util Logging, Log4J, Log4J2 and Logback. 
-
-Log format
+Spring Boot默认的日志输出格式如下
 
 ```text
 2014-03-05 10:57:51.112  INFO 45469 --- [           main] org.apache.catalina.core.StandardEngine  : Starting Servlet Engine: Apache Tomcat/7.0.52
@@ -735,49 +840,53 @@ Log format
 2014-03-05 10:57:51.702  INFO 45469 --- [ost-startStop-1] o.s.b.c.embedded.FilterRegistrationBean  : Mapping filter: 'hiddenHttpMethodFilter' to: [/*]
 ```
 
-The following items are output:
+输出的节点（items）如下：
 
 ```text
 
-Date and Time — Millisecond precision and easily sortable.
-Log Level — ERROR, WARN, INFO, DEBUG or TRACE.
-Process ID.
-A --- separator to distinguish the start of actual log messages.
-Thread name — Enclosed in square brackets (may be truncated for console output).
-Logger name — This is usually the source class name (often abbreviated).
+Date and Time — 精确到毫秒，且易于排序。
+Log Level — ERROR, WARN, INFO, DEBUG or TRACE.Process ID.
+一个用于区分实际日志信息开头的---分隔符。线程名 - 包括在方括号中（控制台输出可能会被截断）。
+Logger name — 通常是源class的类名（缩写）。
 The log message.
 
 ```
 *Logback does not have a FATAL level (it is mapped to ERROR)*
 
-* Console output
+* 控制台输出
 
-By default ERROR, WARN and INFO level messages are logged. To also log DEBUG level messages to the console you can start your application with a --debug flag.
+默认的日志配置会在写日志消息时将它们回显到控制台。默认，ERROR, WARN和INFO级别的消息会被记录。可以在启动应用时，通过--debug标识开启控制台的DEBUG级别日志记录。
 
 $ java -jar myapp.jar --debug
 
 *you can also specify debug=true in your application.properties.*
 
-* File output
+* 文件输出
 
 set logging.file or logging.path property in your application.properties.
 
 
 |  名称 |说明 | 
 |---------| ------|
-| logging.file  | Writes to the specified log file. Names can be an exact location or relative to the current directory. | 
-| logging.path  | Writes spring.log to the specified directory. Names can be an exact location or relative to the current directory. |
+| logging.file  | 写到特定的日志文件里，名称可以是一个精确的位置或相对于当前目录 | 
+| logging.path  | 写到特定文件夹下的spring.log里，名称可以是一个精确的位置或相对于当前目录 |
 
-* Log Levels
+* 日志级别
 
 Example application.properties
 ```text
 logging.level.org.springframework.web=DEBUG
 logging.level.org.hibernate=ERROR
 ```
-* Configure Logback for logging
+* 自定义日志配置
 
-When possible we recommend that you use the -spring variants for your logging configuration (for example logback-spring.xml rather than logback.xml). If you use standard configuration locations, Spring cannot completely control log initialization.
+| 日志系统 |定制 | 
+|---------| ------|
+| Logback  | logback.xml | 
+| Log4j  | log4j.properties或log4j.xml |
+| Log4j2  | log4j2.xml |
+| JDK (Java Util Logging)  | logging.properties|
+
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -841,13 +950,24 @@ When possible we recommend that you use the -spring variants for your logging co
 ```
 
 
+####缓存
 
+
+####消息服务
+
+
+
+####测试
 
 
 
 
 
 ####总结
+
+**开发微服务**
+
+Boot对Spring应用的开发进行了简化，提供了模块化方式导入依赖的能力，强调了开发RESTful Web服务的功能并提供了生成可运行jar的能力，这一切都清晰地表明在开发可部署的微服务方面Boot框架是一个强大的工具。正如前面的例子所示，借助于Boot，让一个RESTful Web工程运行起来是一件很容易的事情；在企业级基础设施领域，微服务是一种越来越流行的应用架构，因为它能够实现快速开发、更小的代码库、企业级集成以及模块化部署
 
 Spring Boot是新一代Spring应用的开发框架，它能够快速的进行应用开发，让人忘记传统的繁琐配置，更加专注于业务逻辑。
 
