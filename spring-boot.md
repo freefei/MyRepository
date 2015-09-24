@@ -81,7 +81,10 @@ class App {
 }
 ```
 
-&nbsp;&nbsp;&nbsp;&nbsp;这个应用可以通过spring run App.groovy命令在Spring Boot CLI中运行，也可加上 --watch参数可以实现热部署。Boot会分析文件并根据各种“编译器自动配置（compiler auto-configuration）”标示符来确定其意图是生成Web应用。然后，它会在一个嵌入式的Tomcat中启动Spring应用上下文，并且使用默认的**8080**端口。打开浏览器并导航到给定的URL，随后将会加载一个页面并展现简单的文本响应：“hello word”。提供默认应用上下文以及嵌入式容器的这些过程，能够让开发人员更加关注于开发应用以及业务逻辑，从而不用再关心繁琐的样板式配置
+* spring run App.groovy
+* 加上 --watch参数可以实现热部署
+
+*提供默认应用上下文以及嵌入式容器的这些过程，能够让开发人员更加关注于开发应用以及业务逻辑，从而不用再关心繁琐的样板式配置*
 
 ####IDEA Demo
 &nbsp;&nbsp;&nbsp;&nbsp;要进行打包和分发的工程会依赖于像Maven或Gradle这样的构建系统。为了简化依赖图，Boot的功能是模块化的，通过导入Boot所谓的“starter”模块，可以将许多的依赖添加到工程之中。为了更容易地管理依赖版本和使用默认配置，框架提供了一个parent POM，工程可以继承它。Spring Boot工程的样例POM文件定义如下所示。
