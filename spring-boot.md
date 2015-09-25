@@ -76,7 +76,7 @@ Homebrew will install spring to /usr/local/bin。
 class App {
   @RequestMapping("/")
   String home() {
-    "hello word"
+    "hello world"
   }
 }
 ```
@@ -121,6 +121,7 @@ class App {
             <artifactId>lombok</artifactId>
             <version>1.12.2</version>
         </dependency>
+    </dependencies>
 
    <!-- Package as an executable JAR --> 
     <build>
@@ -367,12 +368,35 @@ public class Application extends SpringBootServletInitializer {
 
 * 方法一 利用spring-boot-devtools模块 可以参考[例子](http://blog.csdn.net/zhoujinyu0713/article/details/46843115)
 
+由于devtools仅在[Spring milestone repository. ](http://repo.springsource.org/milestone/) 仓库中提供,所以需要在POM.XML 文件中配置仓库地址。
+
 ```xml
- <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-devtools</artifactId>
-  </dependency>
+ <parent>  
+    <groupId>org.springframework.boot</groupId>  
+    <artifactId>spring-boot-starter-parent</artifactId>  
+    <version>1.3.0.M2</version>  
+</parent>
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-devtools</artifactId>
+</dependency>
+
+
+<repositories>
+    <repository>
+        <id>spring-milestones</id>
+        <name>Spring Milestones</name>
+        <url>http://repo.spring.io/milestone</url>
+        <snapshots>
+            <enabled>false</enabled>
+        </snapshots>
+    </repository>
+</repositories>
 ```
+原理是使用了两个ClassLoader，一个Classloader加载那些不会改变的类（第三方Jar包），另一个ClassLoader加载会更改的类，称为  restart ClassLoader
+,这样在有代码更改的时候，原来的restart ClassLoader 被丢弃，重新创建一个restart ClassLoader，由于需要加载的类相比较少，所以实现了较快的重启时间（5秒以内）。
+
 
 * 方法二 结合spring-loaded来实现热部署
 
@@ -560,7 +584,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * @author songrenfei
  * @version 1.0.0
  */
-public interface UserRepository extends JpaRepository<User,String>{
+//@RepositoryDefinition(domainClass=User.class,idClass = Long.class)
+public interface UserRepository extends JpaRepository<User,Long>{
+
+  public User findById(Long id);
   
 }
 
@@ -952,12 +979,38 @@ logging.level.org.hibernate=ERROR
 
 ####缓存
 
+Supported cache providers
+* Generic
+* JCache
+* EhCache 2.x
+* Hazelcast
+* Infinispan
+* Redis
+* Guava
+* Simple
+
 
 ####消息服务
 
-
+ JMS
+* ActiveMQ support
+* Artemis support
+* HornetQ support
+* Using a JNDI ConnectionFactory
+* Sending a message
+* Receiving a message
+* AMQP
+* RabbitMQ support
+* Sending a message
+* Receiving a message
 
 ####测试
+
+ Test scope dependencies
+* Testing Spring applications
+* Testing Spring Boot applications
+* Using Spock to test Spring Boot applications
+* Test utilities
 
 
 
