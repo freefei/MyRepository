@@ -343,7 +343,7 @@ Spring Boot安装了一个'whitelabel'错误页面，当遇到一个服务器错
 
 创建一个可部署的war文件
 
-主类改为继承SpringBootServletInitializer即可
+主类改为继承SpringBootServletInitializer即可,作用与在web.xml中配置负责初始化Spring应用上下文的监听器作用类似，只不过在这里不需要编写额外的XML文件了。
 ```java
 @SpringBootApplication
 public class Application extends SpringBootServletInitializer {
@@ -392,6 +392,15 @@ public class Application extends SpringBootServletInitializer {
             <artifactId>spring-boot-starter-tomcat</artifactId>
             </exclusion>
            </exclusions> 
+</dependency>
+
+加上server-api
+
+<dependency>
+          <groupId>org.apache.tomcat</groupId>
+          <artifactId>tomcat-servlet-api</artifactId>
+          <version>7.0.42</version>
+          <scope>provided</scope>
 </dependency>
 ```
 
