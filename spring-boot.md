@@ -26,57 +26,7 @@ Spring Boot提供了一个强大的一键式Spring的集成开发环境，能够
 * Java环境（JDK 1.7或以上版本）
 * Maven 3.0+ / Gradle 1.12+
 
-####Servlet容器
 
-The following embedded servlet containers are supported out of the box:
-
-|  Name |Servlet Version | Java Version |
-|---------| ------|-----------|
-| Tomcat 8  | 3.1 |    Java 7+   |
-| Tomcat 7  | 3.0 |    Java 6+  |
-| Jetty 9  | 3.1  |    Java 7+ |
-| Jetty 8 | 3.0   |    Java 6+ |
-| Undertow 1.1 | 3.1 | Java 7+   |
-
-默认使用的是Tomcat如果换Jetty在pom.xml添加如下依赖：
-
-```xml
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-web</artifactId>
-    <exclusions>
-        <exclusion>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-tomcat</artifactId>
-        </exclusion>
-    </exclusions>
-</dependency>
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-jetty</artifactId>
-</dependency>
-```
-
-Spring Boot 默认使用的是Tomcat 8、Jetty 9 如果要使用其他版本可以设置如下
-
-```xml
-<properties>
-    <tomcat.version>7.0.59</tomcat.version>
-</properties>
-
-<properties>
-    <jetty.version>8.1.15.v20140411</jetty.version>
-    <jetty-jsp.version>2.2.0.v201112011158</jetty-jsp.version>
-</properties>
-```
-
-Changing the Java version
-
-```xml
-<properties>
-    <java.version>1.8</java.version>
-</properties>
-```
 
 ####命令行 Demo
 &nbsp;&nbsp;&nbsp;&nbsp;从最根本上来讲，Spring Boot就是一些库的集合，它能够被任意项目的构建系统所使用。简便起见，该框架也提供了命令行界面，它可以用来运行和测试Boot应用。
@@ -203,6 +153,59 @@ SpringApplication是Spring Boot框架中描述Spring应用的类，它的run()�
 容器的默认端口是**8080**，如果要更改端口号
 
 只需添加src/main/resources/application.properties 文件 在文件中加入server.port:9000 即可。
+
+
+####Servlet容器
+
+The following embedded servlet containers are supported out of the box:
+
+|  Name |Servlet Version | Java Version |
+|---------| ------|-----------|
+| Tomcat 8  | 3.1 |    Java 7+   |
+| Tomcat 7  | 3.0 |    Java 6+  |
+| Jetty 9  | 3.1  |    Java 7+ |
+| Jetty 8 | 3.0   |    Java 6+ |
+| Undertow 1.1 | 3.1 | Java 7+   |
+
+默认使用的是Tomcat如果换Jetty在pom.xml添加如下依赖：
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-jetty</artifactId>
+</dependency>
+```
+
+Spring Boot 默认使用的是Tomcat 8、Jetty 9 如果要使用其他版本可以设置如下
+
+```xml
+<properties>
+    <tomcat.version>7.0.59</tomcat.version>
+</properties>
+
+<properties>
+    <jetty.version>8.1.15.v20140411</jetty.version>
+    <jetty-jsp.version>2.2.0.v201112011158</jetty-jsp.version>
+</properties>
+```
+
+Changing the Java version
+
+```xml
+<properties>
+    <java.version>1.8</java.version>
+</properties>
+```
 
 
 ####自定义Banner
