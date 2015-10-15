@@ -138,7 +138,7 @@ public class HelloWorld {
 }
 
 ```
-&nbsp;&nbsp;&nbsp;&nbsp;运行应用：mvn spring-boot:run或在IDE中运行main()方法，在浏览器中访问http://localhost:8080/sayHello，Hello World!就出现在了页面中。
+&nbsp;&nbsp;&nbsp;&nbsp;运行应用：mvn spring-boot:run或在IDE中运行main()方法，即可在浏览器中访问。
 
 SpringApplication是Spring Boot框架中描述Spring应用的类，它的run()方法会创建一个Spring应用上下文（Application Context）。另一方面它会扫描当前应用类路径上的依赖，例如本例中发现spring-webmvc（由 spring-boot-starter-web传递引入）在类路径中，那么Spring Boot会判断这是一个Web应用，并启动一个内嵌的Servlet容器（默认是Tomcat）用于处理HTTP请求。
 
