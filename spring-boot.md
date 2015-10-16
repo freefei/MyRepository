@@ -445,9 +445,9 @@ public class Application extends SpringBootServletInitializer {
 
 **手动配置**
 
-下载[spring-loaded](http://repo.spring.io/release/org/springframework/springloaded/1.2.4.RELEASE/springloaded-1.2.4.RELEASE.jar)
+下载 [spring-loaded](http://repo.spring.io/release/org/springframework/springloaded/1.2.4.RELEASE/springloaded-1.2.4.RELEASE.jar)
 
-Git[spring-loaded](https://github.com/spring-projects/spring-loaded)
+Git  [spring-loaded](https://github.com/spring-projects/spring-loaded)
 
 配置如图：-javaagent:/Users/songrenfei/Downloads/springloaded-1.2.4.RELEASE.jar -noverify
 
@@ -895,7 +895,7 @@ security.ignored= # Comma-separated list of paths to exclude from the default se
 ```
 
 ####日志
-Spring Boot内部日志系统使用的是Commons Logging，但开放底层的日志实现。默认为会Java Util Logging, Log4J, Log4J2和Logback提供配置。每种情况下都会预先配置使用控制台输出，也可以使用可选的文件输出。
+Spring Boot内部日志系统使用的是Commons Logging，但开放底层的日志实现。默认为Java Util Logging, Log4J, Log4J2和Logback提供配置。每种情况下都会预先配置使用控制台输出，也可以使用可选的文件输出。
 默认情况下，如果你使用'Starter POMs'，那么就会使用Logback记录日志。
 
 **日志格式**
