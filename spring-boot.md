@@ -862,7 +862,9 @@ management.security.role=ADMIN # role required to access the management endpoint
 management.security.sessions=stateless # session creating policy to use (always, never, if_required, stateless)
 ```
 
-**添加权限**
+**安全**
+
+在微服务的开发中，对于完备安全场景的需求会持续增长。为了满足这种需求，Boot引入了强大完整的Spring Security，并且提供了自动配置的功能，以快速简便地启用安全层。只需在应用的classpath中包含spring-boot-starter-security模块就能使Boot引入一些安全特性，如跨站脚本防护（cross-site scripting protection）并且会添加头信息以防止点击劫持（click-jacking）。
 
 ```xml
 <dependency>
