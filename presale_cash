@@ -1,0 +1,290 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+__author__ = 'xiao'
+
+from torndb import Connection
+import datetime
+import sys
+
+reload(sys) 
+sys.setdefaultencoding( "utf-8" ) 
+
+mysql_host = "127.0.0.1"
+db_name = "test"
+dd = datetime.datetime
+
+#查找预售提现
+def get_presale_cash():
+    try:
+
+        starttime = dd.now()
+        print "query rrs_order_alipay_cash for presale"
+        # 查出预售提现单 排除退款提现
+        cashs = db.query("select * from rrs_order_alipay_cash where type=2 and refund_fee !=0")
+        print 'cashs length: ' + str(len(cashs))
+        #long running
+        endtime = dd.now()
+        print "done, cast: ", (endtime - starttime).seconds
+        return cashs
+
+    except Exception as e:
+        print "query presale cash data failed ", e
+        pass
+        
+#实现思路 由于总订单和子订单的状态保持一致 所有这里获取预售定金的子订单，再根据子订单中得订单id查出该订单关联的提现，根据子订单的paymentcode查询账务记录，获取子订单的手续费，支付时间等信息
+#查找已付定金取消或付尾款超时type为预售定金的子订单
+def get_cancel_overtime_order_item():
+    try:
+
+        starttime = dd.now()
+        print "query order_items for cancel or overtime"
+        orderItems = db.query("select * from order_items where type=2 and status in(-6,-7)")
+        print 'get_cancel_overtime_order_item orderItems length: ' + str(len(orderItems))
+        #long running
+        endtime = dd.now()
+        print "done, cast: ", (endtime - starttime).seconds
+        return orderItems
+
+    except Exception as e:
+        print "query order_items orderItems data failed ", e
+        pass
+
+#查找已完成类型为预售定金的子订单
+def get_over_order_item():
+    try:
+
+        starttime = dd.now()
+        print "query order_items for over or refund or refund_goods"
+        orderItems = db.query("select * from order_items where type=2 and status =3")
+        print 'get_over_order_item orderItems length: ' + str(len(orderItems))
+        #long running
+        endtime = dd.now()
+        print "done, cast: ", (endtime - starttime).seconds
+        return orderItems
+
+    except Exception as e:
+        print "query order_items orderItems data failed ", e
+        pass
+
+#处理只有需生成一条提现记录的预售提现（当为预售已付定金取消和付尾款超时时)
+def handle_one_cash():
+    orderItems = get_cancel_overtime_order_item()
+    for orderItem in orderItems:
+        #更新子结算
+        update_item_settlement(orderItem)
+        #更新提现记录的子订单id
+        update_order_cash(orderItem)
+
+#处理要拆分的提现
+def handle_split_cash():
+    orderItems = get_over_order_item()
+    for orderItem in orderItems:
+        cash = db.get("select * from rrs_order_alipay_cash where order_id = %s",orderItem.order_id)
+        #这里只处理未提现的提现单
+        if(cash.status==0):
+            #更新定金子结算
+            update_item_settlement(orderItem)
+            #更新总提现 
+            db.execute("update rrs_order_alipay_cash set alipay_fee = %s total_fee =%s cash_fee =%s order_item_id =%s",service_fee,orderItem.fee,long(orderItem.fee) - long(service_fee),orderItem.id)
+            #查询尾款子订单
+            orderItemRest = db.get("SELECT * FROM order_items where order_id = %s" and type =3, orderItem.order_id)
+            #更新尾款子结算
+            update_item_settlement(orderItemRest)
+            #更新提现记录的子订单id
+            update_order_cash(orderItemRest)
+            #生成尾款提现
+            generate_order_cash（orderItemRest）
+        else:    
+            print "order alipay cash cash status=1, skipped"
+            pass
+#更新子结算单
+def update_item_settlement(orderItem):
+    transes = db.query("select * from rrs_alipay_trans where trade_no = %s", orderItem.payment_code)
+            if (len(transes) == 0):
+                print "can not found alipay transes, skipped"
+                return
+            else:
+                print "got trans from alipay!!"
+                service_fee = 0
+                trans_date =''
+                for trans in transes:
+                    if trans.trans_code_msg == '收费':
+                        print "get fee of order(id:{0}) is {1}".format(settlement.order_id, trans.outcome)
+                        service_fee = trans.outcome
+                        trans_date = trans.trans_date
+                 try:       
+                    #更新定金子结算单
+                    print "update rrs_item_settlements: third_party_commission{0}, paid_at{1} ,payment_code{2} where order_id{3} ".format(service_fee,trans_date,orderItem.payment_code, orderItem.id)
+                    db.execute("update rrs_item_settlements set third_party_commission = %s paid_at= %s payment_code = %s where order_id = %s", service_fee,trans_date,orderItem.payment_code, orderItem.id)
+                except Exception as e:
+                    print "update rrs_item_settlements data failed ", e
+                    pass 
+#更新提现的order_item_id字段
+def update_order_cash(orderItem):
+    cash_type = 0
+    if(orderItem.type==2):
+        if(orderItem.status==3) or (orderItem.status==-6) or (orderItem.status==-7):
+            cash_type=2
+        else:
+            cash_type=-2
+    else:
+        if(orderItem.status==3) or (orderItem.status==-6) or (orderItem.status==-7):
+            cash_type=3
+        else:
+            cash_type=-3
+    try:
+        print "update rrs_order_alipay_cash: order_id{0}, oorder_item_id{1} ".format(orderItem.order_id, orderItem.id)
+        db.execute("update rrs_order_alipay_cash set order_item_id = %s cash_type = %s where order_id = %s",orderItem.id,cash_type,orderItem.order_id)
+    except Exception as e:
+        print "update rrs_order_alipay_cash order item id failed ", e
+        pass   
+        
+#生成尾款提现        
+def generate_order_cash(settlement):
+    order = db.get("SELECT * FROM orders where id = %s", settlement.order_id)
+    # order_items = db.query("SELECT * FROM order_items where order_id = %s", order_id)
+    shop = db.get("SELECT * FROM shops where user_id = %s", order.seller_id)
+
+    #普通订单 货到付款
+    if (settlement.type == 1 and settlement.pay_type == 2):
+        # print "plain cod order(id:{0}) ,skipped".format(settlement.order_id)
+        return
+
+    # 计算总金额
+    total_fee = settlement.fee
+    #可提现金额
+    # print settlement.third_party_commission
+    cash_fee = long(total_fee) - long(settlement.third_party_commission)
+
+
+
+    if shop == None:
+        print "can not find shop: ", order.shop_id
+        return 
+
+
+    cashed_at = None
+
+
+    ## 创建提现
+    db.execute("INSERT INTO rrs_order_alipay_cash " + 
+        "(" + 
+            "order_id,order_item_id, type, buyer_id, buyer_name, seller_id, seller_name, shop_id, shop_name, " + 
+            "total_fee, alipay_fee, cash_fee, refund_fee, status, " + 
+            "traded_at, cashed_at, created_at, updated_at " 
+        ")" + 
+        "VALUES " + 
+        "(" + 
+            "%s, %s, %s, %s, %s, %s, %s, %s, %s, " + 
+            "%s, %s, %s, %s, %s, " + 
+            "%s, %s, now(), now()"
+        ")", 
+
+            order.id, settlement.order_item_id, order.type, order.buyer_id, settlement.buyer_name, order.seller_id, settlement.seller_name, shop.id, shop.name,
+            total_fee, settlement.third_party_commission, str(cash_fee), 0, settlement.cashed, 
+            order.paid_at, cashed_at
+    )
+    
+#分页查询子结算
+def get_item_settlement_paging(db, offset, limit):
+    itemSettlements = db.query("SELECT *  FROM rrs_item_settlements limit %s, %s", offset, limit)
+    return itemSettlements
+
+#修复子结算中seller_name
+def fix_item_settlement_seller_name():
+
+    try:
+        print "update rrs_item_settlements data"
+
+        offset = 0
+        limit = 500
+        current = 500
+        index = 0
+        
+        starttime = dd.now()
+
+        while current == limit: 
+
+            settlements = get_item_settlement_paging(db, offset, limit)             
+            current = len(settlements)
+
+            for settlement in settlements:
+                # print "handle {0} , seller_id:{1}, index {2}".format(settlement.id, settlement.seller_id, index)
+                user = db.get("select * from users where id = %s",settlement.seller_id)
+                db.execute("update rrs_item_settlements set seller_name = %s where id = %s",user.name,settlement.id)
+                print "update: {0}, index {1} ".format(settlement.id, index)
+
+                index = index + 1
+
+            offset = offset + 500            
+
+        endtime = dd.now()
+        print "done, cast: ", (endtime - starttime).seconds
+
+    except Exception as e:
+        print "update item settlement data failed ", e
+        pass
+                    
+
+#一次性更新子结算单中得
+def update_item_settlement_seller_name():
+    try:
+        db.exectue("update rrs_item_settlements as settlement set seller_name = (db.get("select user_name from shops where user_id=settlement.seller_id"))")
+    except Exception as e:
+        print "update item settlement seller name failed ", e
+        pass
+    
+#子结算中添加seller_name字段
+def alter_item_settlement():
+    try:
+        db.execute("ALTER TABLE `rrs_item_settlements` ADD COLUMN `seller_name`  VARCHAR(64) NULL COMMENT '商家名称' after `seller_id`")
+    except Exception as e:
+        print "alter item settlement seller name failed ", e
+        pass  
+        
+#提现中添加cash_type字段
+def alter_order_alipay_cash():
+    try:    
+        db.execute(" ALTER TABLE `rrs_order_alipay_cash` ADD COLUMN `cash_type`  SMALLINT      NULL      COMMENT '提现类型' after `cashed_at`")
+    except Exception as e:
+        print "alter order alipay cash type failed ", e
+        pass 
+
+#更新提现cash_type字段
+def update_order_alipay_cash():
+    try:    
+        #普通正向
+        db.execute("update rrs_order_alipay_cash set cash_type=1 where type=1 and cash_fee >0")
+        #普通退款
+        db.execute("update rrs_order_alipay_cash set cash_type=-1 where type=1 and cash_fee <0")
+    except Exception as e:
+        print "update order alipay cash type failed ", e
+        pass        
+def start_of_day(date):
+    # t = dd.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+    start = date.strftime('%Y-%m-%d') + ' 00:00:00'
+    return start
+
+def end_of_day(date):
+    # t = dd.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+    end = date.strftime('%Y-%m-%d') + ' 23:59:59'
+    return end
+
+if __name__ == "__main__":
+
+    db = Connection(mysql_host, db_name, user='root', password='anywhere')
+
+    #子结算中添加seller_name字段
+    alter_item_settlement()
+    #提现中添加cash_type字段
+    alter_order_alipay_cash()
+    #更新提现cash_type字段
+    update_order_alipay_cash()
+    #修复子结算中seller_name
+    fix_item_settlement_seller_name()
+    # 处理只有需生成一条提现记录的预售提现
+    handle_one_cash()
+    # 处理要拆分的提现
+    handle_split_cash()
+
+   

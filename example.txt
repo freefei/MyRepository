@@ -1,0 +1,2 @@
+my examp to learning git
+test git stash
